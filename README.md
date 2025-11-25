@@ -202,7 +202,6 @@ sqlite3 covid_vacinacao.db < queries/01_exploratory.sql
 
 ## 📈 Próximos Passos
 
-- [ ] Adicionar dados de vacinação reais via API do OpenDataSUS
 - [ ] Criar dashboard interativo com Python (Streamlit ou Plotly Dash)
 - [ ] Análise preditiva com Machine Learning (previsão de 3ª onda)
 - [ ] Integração com dados de internações (SIHSUS)
