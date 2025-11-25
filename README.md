@@ -14,7 +14,6 @@ Este projeto analisa dados **reais** de COVID-19 e vacinação no Brasil, utiliz
 
 ### 🎯 Objetivos
 
-- Demonstrar domínio de **SQL** em análises complexas (essencial para vagas de Analista de Dados Jr)
 - Trabalhar com **dados públicos** do Ministério da Saúde (OpenDataSUS)
 - Gerar **insights de impacto social** que possam informar políticas públicas
 - Aplicar técnicas como: JOINs, Window Functions, CTEs, Agregações, Date Functions
@@ -195,8 +194,6 @@ sqlite3 covid_vacinacao.db < queries/01_exploratory.sql
 - **COVID-19:** [Brasil.IO](https://brasil.io/dataset/covid19/) (consolidação de dados do Ministério da Saúde)
 - **OpenDataSUS:** [Portal Oficial](https://opendatasus.saude.gov.br/)
 - **População:** IBGE (estimativas 2023)
-
-> **Nota:** Os dados de vacinação deste projeto são simulados baseados em padrões reais. Para análises com dados 100% oficiais, acesse o OpenDataSUS diretamente.
 
 ---
 
