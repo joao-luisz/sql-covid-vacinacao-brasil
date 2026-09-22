@@ -1,239 +1,64 @@
-# 📊 Análise SQL - COVID-19 e Vacinação no Brasil
+# OpenDataSUS Analytics: laboratório de SQL
 
-![SQL](https://img.shields.io/badge/SQL-SQLite%20%7C%20PostgreSQL-blue?style=for-the-badge&logo=sqlite)
-![Python](https://img.shields.io/badge/Python-3.8+-green?style=for-the-badge&logo=python)
-![Status](https://img.shields.io/badge/Status-Completo-success?style=for-the-badge)
+Projeto de portfólio para organizar séries temporais, validar dados e construir consultas analíticas em **Python/Pandas e SQLite**. O nome histórico do repositório foi preservado.
 
-> **Projeto de portfólio demonstrando análise avançada de dados de saúde pública usando SQL.**
+**Vacinação é sempre sintética. O modo padrão também simula os casos de COVID-19. Os resultados não são evidências epidemiológicas nem permitem avaliar eficácia de vacinas.**
 
----
+## Problema
+Como integrar dados em granularidades diferentes, calcular indicadores sem duplicar populações e manter rastreabilidade entre fonte, transformação e resultado?
 
-## 📋 Sobre o Projeto
+## Dados e procedência
+| Componente | Origem | Limite |
+| --- | --- | --- |
+| Casos, modo `synthetic` (padrão) | Simulação NumPy, semente 42 | Nenhuma observação real |
+| Casos, modo `brasil-io` | Download de `caso_full.csv.gz` do Brasil.IO, recorte dos últimos seis meses disponíveis | Requer acesso à fonte e schema compatível; não é coleta atual em tempo real |
+| Vacinação | Gerador determinístico por estado, faixa etária e dia | Coberturas e diferenças entre doses são parâmetros programados |
+| População | Constantes existentes no código | Referência temporal não comprovada; não apresentar como estimativa IBGE 2023 validada |
 
-Este projeto analisa dados **reais** de COVID-19 e vacinação no Brasil, utilizando técnicas avançadas de SQL para extrair insights acionáveis sobre a pandemia e a campanha de imunização.
+A simulação permite executar o estudo localmente sem depender da obtenção de microdados de vacinação. Não é uma amostra anonimizada de pacientes. `data/provenance.json` registra o modo, a semente e as contagens de cada execução. Se o download falhar, a execução falha explicitamente; não troca a origem dos dados silenciosamente.
 
-### 🎯 Objetivos
+## Arquitetura e SQL
+`CSV → validação de chaves → SQLite → views → consultas analíticas`
 
-- Trabalhar com **dados públicos** do Ministério da Saúde (OpenDataSUS)
-- Gerar **insights de impacto social** que possam informar políticas públicas
-- Aplicar técnicas como: JOINs, Window Functions, CTEs, Agregações, Date Functions
+- `data/download_data.py`: geração sintética ou download dos casos.
+- `database/schema.sql`: dimensão de estados, tabelas de casos e vacinação, índices e views.
+- `database/load_data.py`: carga por nomes de colunas, chaves e integridade referencial.
+- `queries/01_exploratory.sql`: agregações e JOINs.
+- `queries/02_vaccination_trends.sql`: LAG, médias móveis e evolução temporal.
+- `queries/03_regional_analysis.sql`: rankings e comparações regionais demonstrativas.
+- `queries/04_age_groups.sql`: segmentação etária e fechamento mensal.
+- `queries/05_advanced_insights.sql`: CTEs, comparação de períodos e totalizações com UNION ALL.
 
-### 💡 Problemas de Negócio Respondidos
-
-1. **Qual a cobertura vacinal por estado e região?**
-2. **Quais faixas etárias têm menor adesão à vacinação?**
-3. **Existe correlação entre vacinação e redução de casos?**
-4. **Como evoluiu a campanha de vacinação ao longo do tempo?**
-5. **Quais estados precisam de intervenção urgente?**
-
----
-
-## 🗂️ Estrutura do Projeto
-
-```
-sql-covid-vacinacao-brasil/
-│
-├── data/
-│   ├── download_data.py          # Script para baixar/gerar dados
-│   ├── covid_casos.csv            # Casos e óbitos por estado
-│   ├── vacinacao.csv              # Doses aplicadas por estado e faixa etária
-│   └── README.md                  # Documentação dos dados
-│
-├── database/
-│   ├── schema.sql                 # Criação de tabelas e views
-│   └── load_data.sql              # Importação dos CSVs
-│
-├── queries/
-│   ├── 01_exploratory.sql         # Análises exploratórias básicas
-│   ├── 02_vaccination_trends.sql  # Evolução temporal da vacinação
-│   ├── 03_regional_analysis.sql   # Comparação regional
-│   ├── 04_age_groups.sql          # Análise por faixa etária
-│   └── 05_advanced_insights.sql   # Correlações e insights avançados
-│
-└── README.md                      # Este arquivo
-```
-
----
-
-## 🚀 Como Executar
-
-### Pré-requisitos
-
-- Python 3.8+ (para geração de dados)
-- SQLite ou PostgreSQL
-- Git (para clonar o repositório)
-
-### Passo a Passo
+## Como executar
+Python 3.10+; execute na raiz do repositório:
 
 ```bash
-# 1. Clone o repositório
 git clone https://github.com/joao-luisz/sql-covid-vacinacao-brasil.git
 cd sql-covid-vacinacao-brasil
-
-# 2. Instale dependências Python
-pip install pandas requests
-
-# 3. Baixe/gere os dados
-cd data
-python download_data.py
-cd ..
-
-# 4. Crie o banco de dados e importe os dados
-sqlite3 covid_vacinacao.db < database/schema.sql
-
-# Para importar CSVs no SQLite:
-sqlite3 covid_vacinacao.db
-.mode csv
-.headers on
-.import --skip 1 data/covid_casos.csv covid_casos
-.import --skip 1 data/vacinacao.csv vacinacao
-.exit
-
-# 5. Execute as queries de análise
-sqlite3 covid_vacinacao.db < queries/01_exploratory.sql
-# Ou abra o arquivo SQL no seu client favorito
+python -m venv .venv
+# Linux/macOS: source .venv/bin/activate
+# Windows: .venv\Scripts\activate
+python -m pip install -r requirements.txt
+python data/download_data.py --mode synthetic
+python database/load_data.py
 ```
 
----
+A carga recria **apenas o banco local de demonstração** `covid_vacinacao.db`. Não aponte este fluxo para dados de produção. Ela também executa os arquivos de consultas para detectar erros SQL. Para experimentar casos da fonte pública, use `--mode brasil-io`; a vacinação permanece simulada e as janelas temporais podem não coincidir.
 
-## 📊 Principais Análises
+## Qualidade de dados e correções
+Chaves esperadas: casos `(data, estado)`; vacinação `(data, estado, faixa_etaria)`. A carga rejeita chaves nulas/duplicadas e verifica relações com estados. Foram corrigidos importação posicional incompatível, nome da coluna de reforço, agregação regional aninhada e denominador de cobertura. O modo sintético usa uma janela fixa e semente reproduzível.
 
-### 1️⃣ **Análises Exploratórias** ([01_exploratory.sql](queries/01_exploratory.sql))
+## Limitações
+- O motor implementado é SQLite. O schema não é diretamente compatível com PostgreSQL.
+- A distribuição etária é uniforme por construção e não representa a demografia brasileira.
+- Doses agregadas não identificam pessoas nem demonstram abandono individual.
+- Classificações e metas nas consultas são exercícios, sem validade operacional ou clínica.
+- A comparação de períodos não calcula um coeficiente de correlação. O antigo valor −0,85 não tinha cálculo reproduzível e foi retirado. Um coeficiente negativo indicaria associação inversa, não “correlação positiva”.
+- Foram retiradas afirmações de processamento de 5 GB e descobertas regionais que não eram sustentadas pelos arquivos.
 
-- Panorama geral nacional de COVID-19
-- Top 10 estados com mais casos
-- Estatísticas por região
-- Cobertura vacinal por estado
+## Aprendizados
+Granularidade, denominadores e procedência importam tanto quanto a sintaxe SQL. Dados sintéticos são úteis para demonstrar métodos, desde que suas limitações sejam explícitas.
 
-**Técnicas SQL:** `GROUP BY`, `ORDER BY`, `JOINs`, `Agregações`
+[LinkedIn](https://linkedin.com/in/joaolfleite) · [GitHub](https://github.com/joao-luisz)
 
----
-
-### 2️⃣ **Evolução Temporal** ([02_vaccination_trends.sql](queries/02_vaccination_trends.sql))
-
-- Evolução mensal de doses aplicadas
-- Crescimento MoM (Month over Month)
-- Identificação de picos e vales
-- Análise por dia da semana
-
-**Técnicas SQL:** `Window Functions` (LAG, LEAD), `DATE functions`, `Média Móvel`
-
----
-
-### 3️⃣ **Análise Regional** ([03_regional_analysis.sql](queries/03_regional_analysis.sql))
-
-- Ranking de estados por cobertura
-- Comparação entre regiões
-- Identificação de melhores/piores desempenhos
-- Análise de disparidade interna
-
-**Técnicas SQL:** `RANK()`, `DENSE_RANK()`, `CASE`, `Subqueries`
-
----
-
-### 4️⃣ **Faixas Etárias** ([04_age_groups.sql](queries/04_age_groups.sql))
-
-- Cobertura por faixa etária
-- Gaps de vacinação
-- Análise de priorização
-- Taxa de desistência (1ª → 2ª dose)
-
-**Técnicas SQL:** `CASE para categorização`, `CTEs`, `Agregações complexas`
-
----
-
-### 5️⃣ **Insights Avançados** ([05_advanced_insights.sql](queries/05_advanced_insights.sql))
-
-- **Correlação:** Vacinação x Redução de Casos
-- Análise multidimensional
-- Identificação de outliers
-- Projeção de metas (90% de cobertura)
-
-**Técnicas SQL:** `CTEs complexas`, `Múltiplos JOINs`, `ROLLUP`, `Agregações aninhadas`
-
----
-
-## 🔍 Principais Insights Encontrados
-
-### ✅ Descobertas
-
-1. **📈 Correlação Positiva:** Estados com maior cobertura vacinal apresentaram redução média de 40-60% nos casos novos.
-
-2. **👴 Priorização Efetiva:** Faixas 60+ atingiram cobertura superior a 90%, conforme estratégia governamental.
-
-3. **👦 Gap em Jovens:** Faixas 18-29 anos apresentam cobertura 15-20% menor que idosos em todos os estados.
-
-4. **🗺️ Desigualdade Regional:** Região Sul tem cobertura média 12% superior ao Nordeste.
-
-5. **📉 Taxa de Desistência:** 15-18% das pessoas que tomaram 1ª dose não completaram o esquema vacinal.
-
-### 💼 Recomendações Acionáveis
-
-| Problema Identificado | Recomendação |
-|----------------------|--------------|
-| Baixa adesão jovem (18-29) | Campanhas em redes sociais e influenciadores |
-| Alta desistência 2ª dose | Busca ativa via SMS/WhatsApp e facilitação de agendamento |
-| Disparidade regional | Redistribuição de doses e apoio logístico ao Norte/Nordeste |
-| Estados abaixo de 70% | Intervenção federal com equipes móveis |
-
----
-
-## 🛠️ Tecnologias Utilizadas
-
-| Ferramenta | Uso |
-|-----------|-----|
-| **SQL (SQLite/PostgreSQL)** | Análise e manipulação de dados |
-| **Python (Pandas)** | Download e processamento de dados |
-| **Git/GitHub** | Versionamento e compartilhamento |
-| **Markdown** | Documentação |
-
----
-
-## 📂 Fontes de Dados
-
-- **COVID-19:** [Brasil.IO](https://brasil.io/dataset/covid19/) (consolidação de dados do Ministério da Saúde)
-- **OpenDataSUS:** [Portal Oficial](https://opendatasus.saude.gov.br/)
-- **População:** IBGE (estimativas 2023)
-
----
-
-## 📈 Próximos Passos
-
-- [ ] Criar dashboard interativo com Python (Streamlit ou Plotly Dash)
-- [ ] Análise preditiva com Machine Learning (previsão de 3ª onda)
-- [ ] Integração com dados de internações (SIHSUS)
-
----
-
-## 👨‍💻 Autor
-
-**João Luis**  
-Analista de Dados | Full Stack Developer
-
-[![LinkedIn](https://img.shields.io/badge/LinkedIn-0077B5?style=for-the-badge&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/seu-linkedin)
-[![Portfolio](https://img.shields.io/badge/Portfolio-FF5722?style=for-the-badge&logo=google-chrome&logoColor=white)](https://seu-portfolio.com)
-[![GitHub](https://img.shields.io/badge/GitHub-181717?style=for-the-badge&logo=github&logoColor=white)](https://github.com/joao-luisz)
-
----
-
-## 📄 Licença
-
-Este projeto está sob a licença MIT. Sinta-se livre para usar como referência para seu próprio portfólio!
-
----
-
-## ⭐ Agradecimentos
-
-- Ministério da Saúde (OpenDataSUS) pelos dados públicos
-- Brasil.IO pela consolidação e disponibilização dos dados
-- Comunidade de Data Science brasileira
-
----
-
-<div align="center">
-
-**Se este projeto te ajudou, deixe uma ⭐ no repositório!**
-
-Feito com 💙 e muito ☕ por João Luis
-
-</div>
+Código sob [MIT](LICENSE). A licença do código não substitui as condições de uso das fontes externas.
