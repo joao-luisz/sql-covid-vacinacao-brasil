@@ -11,6 +11,8 @@
 -- Desabilita foreign keys temporariamente para facilitar recriação
 PRAGMA foreign_keys = OFF;
 
+DROP VIEW IF EXISTS vw_covid_diario;
+DROP VIEW IF EXISTS vw_vacinacao_resumo;
 -- Remove tabelas se já existirem
 DROP TABLE IF EXISTS vacinacao;
 DROP TABLE IF EXISTS covid_casos;
