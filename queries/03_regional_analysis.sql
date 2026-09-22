@@ -1,3 +1,4 @@
+-- EXERCÍCIO COM VACINAÇÃO SINTÉTICA. Não fundamenta decisões de saúde.
 /*
  * ========================================
  * QUERY 03: ANÁLISE REGIONAL COMPARATIVA
@@ -45,8 +46,8 @@ WITH dados_regiao AS (
     SELECT 
         e.regiao,
         SUM(e.populacao) AS populacao_total,
-        MAX(c.casos_acumulados) AS casos_totais,
-        MAX(c.obitos_acumulados) AS obitos_totais
+        SUM(c.casos_acumulados) AS casos_totais,
+        SUM(c.obitos_acumulados) AS obitos_totais
     FROM covid_casos c
     INNER JOIN estados e ON c.estado = e.sigla
     WHERE c.data = (SELECT MAX(data) FROM covid_casos)
@@ -196,12 +197,4 @@ SELECT
 FROM estatisticas_regiao
 ORDER BY disparidade_pct DESC;
 
--- ========================================
--- INSIGHTS ESPERADOS:
--- ========================================
-/*
-✓ Regiões Sul e Sudeste tendem a ter melhor cobertura vacinal
-✓ Estados com maior PIB per capita vacinam mais rápido
-✓ Pode haver grande disparidade dentro de uma mesma região
-✓ População total não é fator determinante de sucesso vacinal
-*/
+-- Resultados demonstrativos: vacinação sintética; não interpretar como achados reais.

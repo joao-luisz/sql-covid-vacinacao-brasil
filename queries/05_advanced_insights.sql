@@ -1,3 +1,4 @@
+-- EXERCÍCIO COM VACINAÇÃO SINTÉTICA. Não fundamenta decisões de saúde.
 /*
  * ========================================
  * QUERY 05: INSIGHTS AVANÇADOS
@@ -8,11 +9,11 @@
  */
 
 -- ========================================
--- 5.1 Correlação: Vacinação x Redução de Casos
+-- 5.1 Comparação descritiva entre períodos (não calcula correlação)
 -- ========================================
 
 WITH periodos AS (
-    -- Período ANTES de alta cobertura (primeiros 2 meses)
+    -- Primeiros 61 dias observados, sem inferência causal
     SELECT 
         estado,
         AVG(casos_novos) AS media_casos_antes
@@ -22,7 +23,7 @@ WITH periodos AS (
     GROUP BY estado
 ),
 periodos_depois AS (
-    -- Período DEPOIS de alta cobertura (últimos 2 meses)
+    -- Últimos 61 dias observados, sem inferência causal
     SELECT 
         estado,
         AVG(casos_novos) AS media_casos_depois
@@ -33,7 +34,7 @@ periodos_depois AS (
 cobertura_atual AS (
     SELECT 
         estado,
-        ROUND(SUM(doses_2d_acumuladas) * 100.0 / MAX(populacao_faixa) * 8, 2) AS cobertura_2d_pct
+        ROUND(SUM(doses_2d_acumuladas) * 100.0 / NULLIF(SUM(populacao_faixa), 0), 2) AS cobertura_2d_pct
 FROM vacinacao
     WHERE data = (SELECT MAX(data) FROM vacinacao)
     GROUP BY estado
@@ -249,13 +250,4 @@ WHERE ce.cobertura > eg.media_nacional + (eg.desvio_medio * 1.5)
     OR ce.cobertura < eg.media_nacional - (eg.desvio_medio * 1.5)
 ORDER BY ce.cobertura DESC;
 
--- ========================================
--- INSIGHTS ESPERADOS:
--- ========================================
-/*
-✓ Correlação positiva: maior vacinação → menor crescimento de casos
-✓ Estados com baixa letalidade + alta vacinação são referência
-✓ Jovens são principal gap em quase todos os estados
-✓ Necessidade de 10-20% adicional para atingir meta de 90%
-✓ Desigualdade regional persiste mesmo com avanço da campanha
-*/
+-- Resultados demonstrativos: vacinação sintética; não interpretar como achados reais.

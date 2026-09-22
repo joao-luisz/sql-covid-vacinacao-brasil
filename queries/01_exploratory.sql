@@ -1,3 +1,4 @@
+-- EXERCÍCIO COM VACINAÇÃO SINTÉTICA. Não fundamenta decisões de saúde.
 /*
  * ========================================
  * QUERY 01: ANÁLISES EXPLORATÓRIAS BÁSICAS
@@ -46,18 +47,16 @@ LIMIT 10;
 -- 1.3 Estatísticas por Região
 -- ========================================
 
-SELECT 
-    e.regiao,
-    COUNT(DISTINCT e.sigla) AS total_estados,
-    SUM(e.populacao) AS populacao_total,
-    SUM(MAX(c.casos_acumulados)) AS total_casos,
-    SUM(MAX(c.obitos_acumulados)) AS total_obitos,
-    ROUND(SUM(MAX(c.casos_acumulados)) * 100000.0 / SUM(e.populacao), 2) AS casos_por_100k,
-    ROUND(SUM(MAX(c.obitos_acumulados)) * 100.0 / NULLIF(SUM(MAX(c.casos_acumulados)), 0), 2) AS letalidade_pct
-FROM covid_casos c
-INNER JOIN estados e ON c.estado = e.sigla
-GROUP BY e.regiao
-ORDER BY total_casos DESC;
+WITH latest AS (
+    SELECT *, ROW_NUMBER() OVER (PARTITION BY estado ORDER BY data DESC) AS rn
+    FROM covid_casos
+)
+SELECT e.regiao, COUNT(*) AS total_estados, SUM(e.populacao) AS populacao_total,
+       SUM(c.casos_acumulados) AS total_casos, SUM(c.obitos_acumulados) AS total_obitos,
+       ROUND(SUM(c.casos_acumulados)*100000.0/SUM(e.populacao),2) AS casos_por_100k,
+       ROUND(SUM(c.obitos_acumulados)*100.0/NULLIF(SUM(c.casos_acumulados),0),2) AS letalidade_pct
+FROM latest c JOIN estados e ON e.sigla=c.estado WHERE c.rn=1
+GROUP BY e.regiao ORDER BY total_casos DESC;
 
 -- ========================================
 -- 1.4 Panorama de Vacinação Nacional
@@ -135,12 +134,4 @@ ORDER BY
         WHEN '80+' THEN 8
     END;
 
--- ========================================
--- INSIGHTS ESPERADOS:
--- ========================================
-/*
-✓ Estados mais populosos têm mais casos em absoluto, mas não necessariamente maior incidência
-✓ Regiões Norte e Nordeste podem ter letalidade maior por dificuldades de acesso à saúde
-✓ Cobertura vacinal deve ser maior em faixas etárias 60+ (grupos prioritários)
-✓ Estados desenvolvidos (SP, RJ, SC) tendem a ter maior cobertura vacinal
-*/
+-- Resultados demonstrativos: vacinação sintética; não interpretar como achados reais.

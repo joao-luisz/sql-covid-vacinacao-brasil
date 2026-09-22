@@ -1,3 +1,4 @@
+-- EXERCÍCIO COM VACINAÇÃO SINTÉTICA. Não fundamenta decisões de saúde.
 /*
  * ========================================
  * QUERY 02: EVOLUÇÃO TEMPORAL DA VACINAÇÃO
@@ -18,7 +19,7 @@ SELECT
     SUM(doses_reforco_novas) AS doses_reforco_mes,
     SUM(doses_1d_novas + doses_2d_novas + doses_reforco_novas) AS total_doses_mes,
     -- Média diária no mês
-    ROUND(AVG(doses_1d_novas + doses_2d_novas + doses_reforco_novas), 0) AS media_diaria
+    ROUND(SUM(doses_1d_novas + doses_2d_novas + doses_reforco_novas) * 1.0 / COUNT(DISTINCT data), 0) AS media_diaria
 FROM vacinacao
 GROUP BY strftime('%Y-%m', data)
 ORDER BY mes;
@@ -169,11 +170,11 @@ SELECT
     pud.data_fim,
     pud.total_2d,
     -- Dias de campanha
-    CAST(julianday(pud.data_fim) - julianday(pud.data_inicio) AS INTEGER) AS dias_campanha,
+    CAST(julianday(pud.data_fim) - julianday(pud.data_inicio) + 1 AS INTEGER) AS dias_campanha,
     -- Velocidade média (doses/dia)
     ROUND(
         pud.total_2d * 1.0 / 
-        NULLIF(julianday(pud.data_fim) - julianday(pud.data_inicio), 0),
+        NULLIF(julianday(pud.data_fim) - julianday(pud.data_inicio) + 1, 0),
         0
     ) AS doses_por_dia
 FROM primeira_ultima_dose pud
@@ -181,12 +182,4 @@ INNER JOIN estados e ON pud.estado = e.sigla
 ORDER BY doses_por_dia DESC
 LIMIT 10;
 
--- ========================================
--- INSIGHTS ESPERADOS:
--- ========================================
-/*
-✓ Crescimento acelerado nos primeiros meses (grupos prioritários)
-✓ Possível redução no ritmo após vacinação de idosos
-✓ Fins de semana podem ter menor aplicação de doses
-✓ Estados com melhor estrutura vacinam mais rápido
-*/
+-- Resultados demonstrativos: vacinação sintética; não interpretar como achados reais.

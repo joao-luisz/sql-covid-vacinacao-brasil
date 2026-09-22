@@ -1,3 +1,4 @@
+-- EXERCÍCIO COM VACINAÇÃO SINTÉTICA. Não fundamenta decisões de saúde.
 /*
  * ========================================
  * QUERY 04: ANÁLISE POR FAIXA ETÁRIA
@@ -132,14 +133,17 @@ LIMIT 10;
 -- 4.5 Evolução da Cobertura por Faixa ao Longo do Tempo
 -- ========================================
 
-WITH cobertura_mensal AS (
+WITH fechamento AS (
+    SELECT *, ROW_NUMBER() OVER (PARTITION BY estado, faixa_etaria, strftime('%Y-%m',data) ORDER BY data DESC) AS rn
+    FROM vacinacao
+), cobertura_mensal AS (
     SELECT 
         strftime('%Y-%m', data) AS mes,
         faixa_etaria,
         SUM(doses_2d_novas) AS doses_mes,
-        MAX(doses_2d_acumuladas) AS doses_acumuladas,
-        MAX(populacao_faixa) AS populacao
-    FROM vacinacao
+        SUM(doses_2d_acumuladas) AS doses_acumuladas,
+        SUM(populacao_faixa) AS populacao
+    FROM fechamento WHERE rn=1
     GROUP BY strftime('%Y-%m', data), faixa_etaria
 )
 SELECT 
@@ -152,7 +156,7 @@ WHERE faixa_etaria IN ('18-29', '60-69', '80+')  -- Amostra de 3 faixas
 ORDER BY faixa_etaria, mes;
 
 -- ========================================
--- 4.6 Análise de Desistência (Gap entre 1ª e 2ª Dose)
+-- 4.6 Diferença agregada de doses (não mede desistência individual) (Gap entre 1ª e 2ª Dose)
 -- ========================================
 
 WITH doses_por_faixa AS (
@@ -168,22 +172,14 @@ SELECT
     faixa_etaria,
     total_1d,
     total_2d,
-    total_1d - total_2d AS pessoas_nao_completaram,
-    ROUND((total_1d - total_2d) * 100.0 / total_1d, 2) AS taxa_desistencia_pct,
+    total_1d - total_2d AS diferenca_doses,
+    ROUND((total_1d - total_2d) * 100.0 / total_1d, 2) AS diferenca_doses_pct,
     CASE 
         WHEN (total_1d - total_2d) * 100.0 / total_1d < 10 THEN 'Baixa'
         WHEN (total_1d - total_2d) * 100.0 / total_1d < 20 THEN 'Moderada'
         ELSE 'Alta'
-    END AS nivel_desistencia
+    END AS faixa_diferenca
 FROM doses_por_faixa
-ORDER BY taxa_desistencia_pct DESC;
+ORDER BY diferenca_doses_pct DESC;
 
--- ========================================
--- INSIGHTS ESPERADOS:
--- ========================================
-/*
-✓ Idosos (60+) devem ter cobertura superior a 90%
-✓ Jovens (18-29) tendem a ter menor adesão
-✓ Pode haver gap significativo entre 1ª e 2ª dose em faixas jovens
-✓ Estados do Sul/Sudeste vacinam melhor em todas as faixas
-*/
+-- Resultados demonstrativos: vacinação sintética; não interpretar como achados reais.
